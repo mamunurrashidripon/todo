@@ -1,8 +1,8 @@
 {
   "name": "To-Do List App",
   "short_name": "ToDo",
-  "start_url": "./index.html",
-  "scope": "./todo/",
+  "start_url": "/todo/",
+  "scope": "/todo/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3f51b5",
