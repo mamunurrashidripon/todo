@@ -96,16 +96,17 @@
     const list = document.getElementById("todo-list");
     const tasks = []; // holds taskRef objects
 
-    // Load saved tasks
     function loadTasks() {
-      const saved = localStorage.getItem("STORAGE_KEY");
+      const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
           parsed.forEach(task => {
             addTask(task.text, task.completed, task.date, false);
           });
-        } catch {}
+        } catch (e) {
+          console.error("Error loading tasks:", e);
+        }
       }
     }
 
