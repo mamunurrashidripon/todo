@@ -6,6 +6,13 @@
   <meta name="theme-color" content="#3f51b5" />
   <link rel="manifest" href="manifest.json" />
   <title>To-Do List with Date, Status & Alarm</title>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(() => console.log("Service Worker Registered"))
+        .catch(e => console.warn("SW register failed", e));
+    }
+  </script>
   <style>
     body {
       font-family: sans-serif;
@@ -66,13 +73,6 @@
       font-size: 1rem;
     }
   </style>
-  <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-      .then(() => console.log("Service Worker Registered"));
-  }
-</script>
-
 </head>
 <body>
   <h1>📝 To-Do List</h1>
