@@ -313,8 +313,8 @@
       }
     }, 2 * 60 * 1000); // 2 minutes
 
-    // Initialize
-    loadTasks();
+    // Load tasks only after DOM is fully loaded
+    window.addEventListener("DOMContentLoaded", loadTasks);
   </script>
 </body>
 </html>
