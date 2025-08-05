@@ -90,6 +90,7 @@
   <ul id="todo-list"></ul>
 
   <script>
+    const STORAGE_KEY = "todo-tasks@/todo/"; // or use location.pathname
     const form = document.getElementById("todo-form");
     const input = document.getElementById("new-task");
     const list = document.getElementById("todo-list");
@@ -97,7 +98,7 @@
 
     // Load saved tasks
     function loadTasks() {
-      const saved = localStorage.getItem("todo-tasks");
+      const saved = localStorage.getItem("STORAGE_KEY");
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -115,7 +116,7 @@
         completed: t.element.classList.contains("completed"),
         date: t.dateStr
       }));
-      localStorage.setItem("todo-tasks", JSON.stringify(simpleTasks));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(simpleTasks));
     }
 
     form.addEventListener("submit", function(e) {
