@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="manifest" href="manifest.json" />
+  <title>To-Do List with Date, Status & Alarm</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f0f0f0;
+      padding: 2rem;
+      max-width: 700px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+    }
+    #todo-form {
+      display: flex;
+      gap: 1rem;
+    }
+    #todo-form input {
+      flex: 1;
+      padding: 0.5rem;
+    }
+    #todo-form button {
+      padding: 0.5rem 1rem;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 1rem;
+    }
+    li {
+      background: white;
+      margin: 0.5rem 0;
+      padding: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    li.completed .task-text {
+      text-decoration: line-through;
+      color: gray;
+    }
+    .task-content {
+      flex: 1;
+    }
+    .task-date, .task-status {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 0.25rem;
+    }
+    .task-status {
+      font-weight: bold;
+    }
+    .actions button {
+      margin-left: 0.3rem;
+    }
+    input.edit-input {
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+  </style>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log("Service Worker Registered"));
+  }
+</script>
+
+</head>
+<body>
+  <h1>📝 To-Do List</h1>
+  <form id="todo-form">
+    <input type="text" id="new-task" placeholder="Add a new task..." required />
+    <button type="submit">Add</button>
+  </form>
+  <ul id="todo-list"></ul>
+
+  <script>
+    const form = document.getElementById("todo-form");
+    const input = document.getElementById("new-task");
+    const list = document.getElementById("todo-list");
+    const tasks = []; // store task references for reminders
+
+    form.addEventListener("submit", function(e) {
+      e.preventDefault();
+      const taskText = input.value.trim();
+      if (taskText !== "") {
+        const task = addTask(taskText);
+        tasks.push(task);
+        input.value = "";
+        input.focus();
+      }
+    });
+
+    function addTask(text) {
+      const li = document.createElement("li");
+
+      const taskContent = document.createElement("div");
+      taskContent.className = "task-content";
+
+      const span = document.createElement("span");
+      span.className = "task-text";
+      span.textContent = text;
+
+      const date = document.createElement("div");
+      date.className = "task-date";
+      date.textContent = new Date().toISOString().split("T")[0];
+
+      const status = document.createElement("div");
+      status.className = "task-status";
+      status.textContent = "Status: Pending";
+
+      taskContent.appendChild(span);
+      taskContent.appendChild(date);
+      taskContent.appendChild(status);
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const completeBtn = document.createElement("button");
+      completeBtn.textContent = "✔️";
+      completeBtn.addEventListener("click", () => {
+        li.classList.toggle("completed");
+        const isDone = li.classList.contains("completed");
+        status.textContent = isDone ? "Status: Completed" : "Status: Pending";
+      });
+
+      const editBtn = document.createElement("button");
+      editBtn.textContent = "✏️";
+      editBtn.addEventListener("click", () => {
+        editTask(li, span, status, date);
+      });
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "🗑️";
+      deleteBtn.addEventListener("click", () => {
+        list.removeChild(li);
+        // Remove from reminder list
+        const index = tasks.indexOf(taskRef);
+        if (index > -1) tasks.splice(index, 1);
+      });
+
+      actions.appendChild(completeBtn);
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+
+      li.appendChild(taskContent);
+      li.appendChild(actions);
+      list.appendChild(li);
+
+      const taskRef = { element: li, span, status };
+      return taskRef;
+    }
+
+    function editTask(li, span, statusDiv, dateDiv) {
+      const oldText = span.textContent;
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = oldText;
+      input.className = "edit-input";
+
+      const saveBtn = document.createElement("button");
+      saveBtn.textContent = "✔️";
+
+      const cancelBtn = document.createElement("button");
+      cancelBtn.textContent = "❌";
+
+      const actions = li.querySelector(".actions");
+      actions.innerHTML = "";
+      actions.appendChild(saveBtn);
+      actions.appendChild(cancelBtn);
+
+      const taskContent = li.querySelector(".task-content");
+      taskContent.replaceChild(input, span);
+
+      input.focus();
+
+      const saveChanges = () => {
+        const newText = input.value.trim();
+        if (newText !== "") {
+          span.textContent = newText;
+          taskContent.replaceChild(span, input);
+          resetActions(li, span, statusDiv, dateDiv);
+        }
+      };
+
+      saveBtn.addEventListener("click", saveChanges);
+      input.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") saveChanges();
+      });
+
+      cancelBtn.addEventListener("click", () => {
+        taskContent.replaceChild(span, input);
+        resetActions(li, span, statusDiv, dateDiv);
+      });
+    }
+
+    function resetActions(li, span, statusDiv, dateDiv) {
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const completeBtn = document.createElement("button");
+      completeBtn.textContent = "✔️";
+      completeBtn.addEventListener("click", () => {
+        li.classList.toggle("completed");
+        const isDone = li.classList.contains("completed");
+        statusDiv.textContent = isDone ? "Status: Completed" : "Status: Pending";
+      });
+
+      const editBtn = document.createElement("button");
+      editBtn.textContent = "✏️";
+      editBtn.addEventListener("click", () => {
+        editTask(li, span, statusDiv, dateDiv);
+      });
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "🗑️";
+      deleteBtn.addEventListener("click", () => {
+        list.removeChild(li);
+      });
+
+      actions.appendChild(completeBtn);
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+
+      const oldActions = li.querySelector(".actions");
+      if (oldActions) li.removeChild(oldActions);
+      li.appendChild(actions);
+    }
+
+    // 🔔 Alarm every 2 minutes for pending tasks
+    setInterval(() => {
+      const pendingTasks = tasks.filter(t => 
+        t.element && !t.element.classList.contains("completed")
+      );
+      if (pendingTasks.length > 0) {
+        alert(`⏰ Reminder!\nYou have ${pendingTasks.length} pending task(s):\n` +
+              pendingTasks.map(t => `• ${t.span.textContent}`).join("\n"));
+      }
+    }, 2 * 60 * 1000); // 2 minutes
+  </script>
+</body>
+</html>
