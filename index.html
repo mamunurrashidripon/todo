@@ -3,29 +3,80 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Simple PWA Todo</title>
+  <title>To-Do List App</title>
   <meta name="theme-color" content="#3f51b5" />
   <link rel="manifest" href="manifest.json" />
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 700px;
+      margin: 2rem auto;
+      background: #f0f0f0;
+      padding: 1rem;
+    }
+    h1 {
+      text-align: center;
+    }
+    #todo-form {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    #todo-form input {
+      flex: 1;
+      padding: 0.5rem;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      background: white;
+      margin-bottom: 0.5rem;
+      padding: 0.75rem;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .task-info {
+      flex: 1;
+    }
+    .task-info span {
+      font-weight: bold;
+      display: block;
+    }
+    .task-date,
+    .task-status {
+      font-size: 0.8rem;
+      color: #666;
+    }
+    .completed .task-info span {
+      text-decoration: line-through;
+      color: gray;
+    }
+    .actions button {
+      margin-left: 0.3rem;
+      cursor: pointer;
+    }
+    input.edit-input {
+      padding: 0.4rem;
+      font-size: 1rem;
+      width: 100%;
+    }
+  </style>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js')
         .then(() => console.log("SW registered"));
     }
   </script>
-  <style>
-    body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; background: #f0f0f0; }
-    h1 { text-align: center; }
-    #todo-form { display: flex; gap: 0.5rem; }
-    #todo-form input { flex: 1; padding: 0.5rem; }
-    ul { list-style: none; padding: 0; }
-    li { background: #fff; margin: 0.5rem 0; padding: 0.5rem; display: flex; justify-content: space-between; }
-    li.completed span { text-decoration: line-through; color: gray; }
-  </style>
 </head>
 <body>
-  <h1>✅ To-Do List</h1>
+  <h1>📝 To-Do List</h1>
   <form id="todo-form">
-    <input type="text" id="task-input" placeholder="New task..." required />
+    <input type="text" id="task-input" placeholder="Add a new task..." required />
     <button type="submit">Add</button>
   </form>
   <ul id="task-list"></ul>
@@ -47,51 +98,122 @@
       if (saved) {
         try {
           tasks = JSON.parse(saved);
-          tasks.forEach(t => renderTask(t.text, t.done));
+          tasks.forEach(task => renderTask(task));
         } catch (e) {
-          console.error("Invalid data:", e);
+          console.error("Error parsing saved tasks:", e);
         }
       }
     }
 
-    function renderTask(text, done = false) {
+    function renderTask(task) {
       const li = document.createElement("li");
-      const span = document.createElement("span");
-      span.textContent = text;
+      if (task.completed) li.classList.add("completed");
 
-      const btn = document.createElement("button");
-      btn.textContent = "❌";
-      btn.onclick = () => {
-        tasks = tasks.filter(task => task.text !== text);
-        saveTasks();
-        li.remove();
-      };
+      const info = document.createElement("div");
+      info.className = "task-info";
 
-      li.appendChild(span);
-      li.appendChild(btn);
-      if (done) li.classList.add("completed");
+      const title = document.createElement("span");
+      title.textContent = task.text;
 
-      span.onclick = () => {
+      const date = document.createElement("div");
+      date.className = "task-date";
+      date.textContent = "Date: " + task.date;
+
+      const status = document.createElement("div");
+      status.className = "task-status";
+      status.textContent = "Status: " + (task.completed ? "Completed" : "Pending");
+
+      info.appendChild(title);
+      info.appendChild(date);
+      info.appendChild(status);
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const completeBtn = document.createElement("button");
+      completeBtn.textContent = "✔️";
+      completeBtn.title = "Mark Complete";
+      completeBtn.onclick = () => {
+        task.completed = !task.completed;
         li.classList.toggle("completed");
-        const task = tasks.find(t => t.text === text);
-        if (task) {
-          task.done = !task.done;
-          saveTasks();
-        }
+        status.textContent = "Status: " + (task.completed ? "Completed" : "Pending");
+        saveTasks();
       };
 
+      const editBtn = document.createElement("button");
+      editBtn.textContent = "✏️";
+      editBtn.title = "Edit";
+      editBtn.onclick = () => {
+        const inputEdit = document.createElement("input");
+        inputEdit.type = "text";
+        inputEdit.value = task.text;
+        inputEdit.className = "edit-input";
+
+        const saveBtn = document.createElement("button");
+        saveBtn.textContent = "✔️";
+        saveBtn.onclick = () => {
+          const newText = inputEdit.value.trim();
+          if (newText) {
+            task.text = newText;
+            title.textContent = newText;
+            info.replaceChild(title, inputEdit);
+            actions.innerHTML = "";
+            actions.appendChild(completeBtn);
+            actions.appendChild(editBtn);
+            actions.appendChild(deleteBtn);
+            saveTasks();
+          }
+        };
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.textContent = "❌";
+        cancelBtn.onclick = () => {
+          info.replaceChild(title, inputEdit);
+          actions.innerHTML = "";
+          actions.appendChild(completeBtn);
+          actions.appendChild(editBtn);
+          actions.appendChild(deleteBtn);
+        };
+
+        info.replaceChild(inputEdit, title);
+        inputEdit.focus();
+
+        actions.innerHTML = "";
+        actions.appendChild(saveBtn);
+        actions.appendChild(cancelBtn);
+      };
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "🗑️";
+      deleteBtn.title = "Delete";
+      deleteBtn.onclick = () => {
+        tasks = tasks.filter(t => t !== task);
+        li.remove();
+        saveTasks();
+      };
+
+      actions.appendChild(completeBtn);
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+
+      li.appendChild(info);
+      li.appendChild(actions);
       list.appendChild(li);
     }
 
     form.onsubmit = e => {
       e.preventDefault();
       const text = input.value.trim();
-      if (text) {
-        tasks.push({ text, done: false });
-        saveTasks();
-        renderTask(text, false);
-        input.value = "";
-      }
+      if (!text) return;
+      const task = {
+        text: text,
+        completed: false,
+        date: new Date().toISOString().split("T")[0]
+      };
+      tasks.push(task);
+      renderTask(task);
+      saveTasks();
+      input.value = "";
     };
 
     window.addEventListener("DOMContentLoaded", loadTasks);
